@@ -1,0 +1,55 @@
+=== PACO READ-ONLY AUDIT ===
+Role: entry
+Host: msk-1-vm-9d6q
+OS: Ubuntu 24.04.5 LTS
+Kernel: 6.8.0-147-generic
+awg: installed
+awg-quick: installed
+ip: installed
+iptables: installed
+nft: installed
+ufw: absent
+
+=== NETWORK INTERFACES (addresses are not secrets, but review before sharing) ===
+lo               UNKNOWN        127.0.0.1/8
+eth0             UP             217.199.252.90/24 metric 100
+eth1             UP             10.200.200.4/24
+awg1             UNKNOWN        10.88.88.1/30
+awg0             UNKNOWN        10.77.77.1/24
+
+=== WAN DEFAULT ROUTE ===
+default via 217.199.252.1 dev eth0 proto static onlink
+default via 217.199.252.1 dev eth0 proto dhcp src 217.199.252.90 metric 100
+
+=== FORWARDING ===
+net.ipv4.ip_forward = 1
+
+=== AWG PEER COUNTS ONLY ===
+awg0 running peer count: 53
+awg0 config peer count: 53
+awg1 running peer count: 1
+awg1 config peer count: 1
+
+=== SYSTEMD ===
+paco-failclosed.service                enabled=enabled    active=active
+awg-quick@awg0.service                 enabled=enabled    active=active
+awg-quick@awg1.service                 enabled=enabled    active=active
+netfilter-persistent.service           enabled=enabled    active=active
+ufw.service                            enabled=enabled    active=inactive
+paco-awg-traffic.timer                 enabled=enabled    active=active
+
+=== ENTRY POLICY AND FAIL-CLOSED ===
+0:      from all lookup local
+99:     from 10.88.88.1 lookup 100
+100:    from 10.77.77.0/24 lookup 100
+32766:  from all lookup main
+32767:  from all lookup default
+default dev awg1 scope link
+unreachable default metric 4278198272
+1.1.1.1 from 10.77.77.2 dev awg1 table 100
+    cache iif awg0
+AWG0 fail-closed FORWARD: PRESENT
+
+AUDIT FINISHED. No settings changed. Review IPs/hostnames before sharing output.
+
+NOTE: above is the actual operator-supplied audit. No secrets or configuration keys were added.

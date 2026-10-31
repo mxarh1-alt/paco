@@ -1,0 +1,45 @@
+{
+  "checked_date": "2026-10-31",
+  "method": "HTTPS с проверкой TLS; GitHub HEAD сопоставлен с tags; deb SHA256 сверена с HTTPS Packages (не APT signature)",
+  "sources": [
+    {
+      "local_reference": "awg-tools-readme.md",
+      "url": "https://raw.githubusercontent.com/amnezia-vpn/amneziawg-tools/ee0f0a9aa34ff0a0da4b3433b9512781cfe02843/README.md",
+      "commit": "ee0f0a9aa34ff0a0da4b3433b9512781cfe02843",
+      "sha256": "7b35380b2ee3b52222d364b98fa27662ef9b8d77ddd422cc611793553c4beadd"
+    },
+    {
+      "local_reference": "awg-quick.bash",
+      "url": "https://raw.githubusercontent.com/amnezia-vpn/amneziawg-tools/ee0f0a9aa34ff0a0da4b3433b9512781cfe02843/src/wg-quick/linux.bash",
+      "commit": "ee0f0a9aa34ff0a0da4b3433b9512781cfe02843",
+      "sha256": "f4bb0f5d63665ade87f0cb9f2185c43515cff09868637eb311f98f65a318722c"
+    },
+    {
+      "local_reference": "awg-config.c",
+      "url": "https://raw.githubusercontent.com/amnezia-vpn/amneziawg-tools/ee0f0a9aa34ff0a0da4b3433b9512781cfe02843/src/config.c",
+      "commit": "ee0f0a9aa34ff0a0da4b3433b9512781cfe02843",
+      "sha256": "2ae29ea09e94ca9c655643d667c54b2adfb4a2afaabc14dd4bc1501ddcbd47f4"
+    },
+    {
+      "local_reference": "awg-module-readme.md",
+      "url": "https://raw.githubusercontent.com/amnezia-vpn/amneziawg-linux-kernel-module/4569c4c67f3a57414969260cafbbd04694fbaae0/README.md",
+      "commit": "4569c4c67f3a57414969260cafbbd04694fbaae0",
+      "sha256": "d1fe4c67854f23772d31d1b72d351e14e135ee405682eda50cc36a50fe632603"
+    },
+    {
+      "local_reference": "noble-amd64-Packages",
+      "url": "https://ppa.launchpadcontent.net/amnezia/ppa/ubuntu/dists/noble/main/binary-amd64/Packages.gz",
+      "commit": null,
+      "sha256": "576a7dbb0c152dbf42964ffefa542f46595f86b22572c962a39d8d786d1a2b59"
+    },
+    {
+      "local_reference": "amneziawg-tools.deb",
+      "url": "https://ppa.launchpadcontent.net/amnezia/ppa/ubuntu/pool/main/a/amneziawg/amneziawg-tools_1.0.20210914-0~202608130144+ee0f0a9~ubuntu24.04.1_amd64.deb",
+      "commit": null,
+      "sha256": "2c924076be2ba217eea04f9693291f01c5307a9be5aeee60d04525a50ff2804f"
+    }
+  ],
+  "blocked": [
+    "https://docs.amnezia.org/ru/documentation/amnezia-wg/ — proxy 403; прямой обход не выполнялся"
+  ]
+}

@@ -1,0 +1,1 @@
+PASS: systemd-analyze verify; rendered blocks: 8 ; base targets/legacy services are OFFLINE FIXTURES

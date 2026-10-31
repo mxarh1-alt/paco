@@ -1,0 +1,19 @@
+{
+  "scenario": "TO_FILL_A_OR_B",
+  "checked_at_epoch": 0,
+  "observed_exit_ip": "TO_FILL",
+  "entry_boot_id": "TO_FILL",
+  "exit_boot_id": "TO_FILL",
+  "awg0_peer_fingerprint": "TO_FILL",
+  "awg0_peer_count": 0,
+  "dns": false,
+  "https": false,
+  "native_ipv6_blocked": false,
+  "route_loss_failclosed": false,
+  "awg1_stop_failclosed": false,
+  "rollback_drill": false,
+  "ssh_new_session": false,
+  "offsite_backup": false,
+  "reboot_exit": false,
+  "reboot_entry": false
+}

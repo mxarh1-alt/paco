@@ -1,0 +1,9 @@
+[Unit]
+Description=PACO rollback deadline $id
+[Timer]
+OnCalendar=$deadline
+Persistent=true
+AccuracySec=1s
+Unit=$TIMER.service
+[Install]
+WantedBy=timers.target

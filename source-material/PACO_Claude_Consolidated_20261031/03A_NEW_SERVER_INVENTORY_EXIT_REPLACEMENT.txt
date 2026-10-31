@@ -1,0 +1,41 @@
+# СЦЕНАРИЙ A: Москва (ENTRY) остаётся, EXIT — совершенно новый VPS.
+# Статусы: CONFIRMED = проверено на существующем узле; TO_CONFIRM = проверить; TO_FILL = новое значение.
+# НЕ вставлять пароли, приватные ключи/PSK, SSH-ключи и клиентские конфиги.
+SCENARIO=A
+ENTRY_LOCATION=Moscow [CONFIRMED]
+ENTRY_HOSTNAME=msk-1-vm-9d6q [CONFIRMED]
+ENTRY_OS_ID_VERSION=Ubuntu 24.04.5 LTS [CONFIRMED 2026-10-31]
+ENTRY_KERNEL=6.8.0-147-generic [CONFIRMED 2026-10-31]
+ENTRY_PUBLIC_IP=217.199.252.90 [CONFIRMED; remains ENTRY]
+ENTRY_WAN_IF=eth0 [CONFIRMED]
+ENTRY_OTHER_IF=eth1 10.200.200.4/24 [CONFIRMED; role unknown, do not touch]
+ENTRY_SSH_METHOD=SSH available; provider console and actual whitelist TO_CONFIRM
+ENTRY_AWG_VERSION=TO_CONFIRM
+ENTRY_AWG0_UDP_PORT=60333 [CONFIRMED]
+ENTRY_AWG1_UDP_PORT=60334 [CONFIRMED]
+ENTRY_FIREWALL=iptables + netfilter-persistent [CONFIRMED]
+ENTRY_CLIENT_MANAGER=paco-awg v0.2.4 [CONFIRMED]
+ENTRY_CLIENT_PEERS=53 [CONFIRMED 2026-10-31]
+EXIT_LOCATION=TO_FILL (city, country)
+EXIT_HOSTNAME=TO_FILL
+EXIT_OS_ID_VERSION=TO_FILL (after purchasing and read-only audit)
+EXIT_PUBLIC_IP=TO_FILL
+EXIT_WAN_IF=TO_FILL (from ip -br a / ip route)
+EXIT_SSH_METHOD=TO_FILL (console / approved SSH)
+EXIT_AWG_VERSION=TO_FILL
+EXIT_FIREWALL=TO_CONFIRM (select UFW/iptables/nft; validate)
+INTERSERVER_AWG1_UDP_PORT=60334 [PACO desired; verify available]
+CLIENT_CIDR=10.77.77.0/24 [CONFIRMED; retain unless collision]
+TRANSIT_CIDR=10.88.88.0/30 [CONFIRMED; retain unless collision]
+ENTRY_AWG0_IP=10.77.77.1/24 [CONFIRMED]
+ENTRY_AWG1_IP=10.88.88.1/30 [CONFIRMED]
+EXIT_AWG1_IP=10.88.88.2/30 [PACO desired]
+CLIENT_DNS=1.1.1.1 [CONFIRMED in client profiles; validate on new exit]
+KEEP_EXISTING_CLIENT_KEYS=YES [REQUIREMENT]
+ENTRY_ENDPOINT_CHANGE=NO [provided ENTRY public IP remains unchanged]
+HAS_OFFSITE_BACKUP=YES (reported copied to Windows; restore test TO_CONFIRM)
+EXIT_PROVIDER_CONSOLE_AVAILABLE=TO_CONFIRM
+SSH_WHITELIST_CURRENT=TO_CONFIRM (do not copy unknown whitelist)
+IPV6_CLIENT_POLICY=TO_CONFIRM (must be fail-closed / blocked as appropriate)
+MAINTENANCE_WINDOW=TO_FILL
+EXPLICIT_APPROVAL_FOR_CHANGES=NO (until granted for a specific step)

@@ -1,0 +1,7 @@
+{
+  "all_clients_ipv6_captured_or_os_blocked": false,
+  "native_ipv6_test_passed": false,
+  "reviewed_at_epoch": 0,
+  "operator": "TO_CONFIRM",
+  "scope": "TO_CONFIRM: какие устройства, каким способом проверены"
+}

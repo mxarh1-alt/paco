@@ -1,0 +1,11 @@
+# Приватные данные оператора не хранить в Git.
+__pycache__/
+*.py[cod]
+*.key
+*.psk
+*.sqlite*
+*.db
+config/*.env
+private/
+backups/
+clients/

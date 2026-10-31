@@ -1,0 +1,8 @@
+[Unit]
+Description=PACO automatic rollback $id
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=$RUNTIME/common/rollback-runtime.sh --apply $id
+StandardOutput=null
+StandardError=null

@@ -1,0 +1,15 @@
+[Unit]
+Description=PACO explicit-path $intf
+Requires=paco-deploy-guard.service
+After=network-online.target paco-deploy-guard.service
+Wants=network-online.target
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+UMask=0077
+TimeoutStartSec=30s
+TimeoutStopSec=30s
+ExecStart=/usr/bin/awg-quick up /etc/amnezia/$intf.conf
+ExecStop=/usr/bin/awg-quick down /etc/amnezia/$intf.conf
+StandardOutput=null
+StandardError=null
