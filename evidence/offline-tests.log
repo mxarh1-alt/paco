@@ -1,7 +1,9 @@
+test_A_guard_is_after_legacy_and_before_awg_not_network_pre (__main__.Offline.test_A_guard_is_after_legacy_and_before_awg_not_network_pre) ... ok
 test_a_identity_change_blocks (__main__.Offline.test_a_identity_change_blocks) ... ok
 test_a_old_psk_cannot_be_silently_removed (__main__.Offline.test_a_old_psk_cannot_be_silently_removed) ... ok
 test_a_rewrites_only_transit_and_preserves_private (__main__.Offline.test_a_rewrites_only_transit_and_preserves_private) ... ok
 test_a_transit_profile_mismatch_blocks (__main__.Offline.test_a_transit_profile_mismatch_blocks) ... ok
+test_a_unknown_transit_peer_parameter_rejected (__main__.Offline.test_a_unknown_transit_peer_parameter_rejected) ... ok
 test_apply_requires_root_before_mutation (__main__.Offline.test_apply_requires_root_before_mutation) ... ok
 test_atomic_permissions (__main__.Offline.test_atomic_permissions) ... ok
 test_atomic_refuses_symlink (__main__.Offline.test_atomic_refuses_symlink) ... ok
@@ -13,12 +15,24 @@ test_duplicate_field_rejected (__main__.Offline.test_duplicate_field_rejected) .
 test_duplicate_headers_block (__main__.Offline.test_duplicate_headers_block) ... ok
 test_endpoint_mismatch_blocks (__main__.Offline.test_endpoint_mismatch_blocks) ... ok
 test_enroll_idempotent_and_full_tunnel_with_real_awg_pubkey (__main__.Offline.test_enroll_idempotent_and_full_tunnel_with_real_awg_pubkey) ... ok
+test_existing_awg1_exact_start_stop_paths (__main__.Offline.test_existing_awg1_exact_start_stop_paths) ... ok
+test_existing_awg1_partial_paths_wrappers_and_extra_commands_blocked (__main__.Offline.test_existing_awg1_partial_paths_wrappers_and_extra_commands_blocked) ... ok
+test_header_and_unicode_comments_preserved (__main__.Offline.test_header_and_unicode_comments_preserved) ... ok
 test_internal_scripts_default_no_mutation (__main__.Offline.test_internal_scripts_default_no_mutation) ... ok
 test_inventory_override_intentional (__main__.Offline.test_inventory_override_intentional) ... ok
 test_kernel_roundtrip_missing_s3_blocks (__main__.Offline.test_kernel_roundtrip_missing_s3_blocks) ... ok
+test_live_graph_cycle_or_error_blocks_even_if_exit_zero (__main__.Offline.test_live_graph_cycle_or_error_blocks_even_if_exit_zero) ... ok
+test_live_graph_overlay_uses_real_search_paths_without_mutation (__main__.Offline.test_live_graph_overlay_uses_real_search_paths_without_mutation) ... ok
+test_manager_report_never_executes_source_and_denies_activation (__main__.Offline.test_manager_report_never_executes_source_and_denies_activation) ... ok
 test_missing_profile_parameter_blocks (__main__.Offline.test_missing_profile_parameter_blocks) ... ok
+test_named_config_render_parse_repeat_is_stable (__main__.Offline.test_named_config_render_parse_repeat_is_stable) ... ok
 test_new_empty_table100_is_not_an_error (__main__.Offline.test_new_empty_table100_is_not_an_error) ... ok
+test_new_nodes_use_early_guard_without_legacy_dependency (__main__.Offline.test_new_nodes_use_early_guard_without_legacy_dependency) ... ok
+test_peer_comment_metadata_is_not_sent_to_awg (__main__.Offline.test_peer_comment_metadata_is_not_sent_to_awg) ... ok
 test_profile_unsupported_field_blocks (__main__.Offline.test_profile_unsupported_field_blocks) ... ok
+test_removed_quick_field_keeps_its_notes (__main__.Offline.test_removed_quick_field_keeps_its_notes) ... ok
+test_restore_duplicate_public_key_different_ip_rejected (__main__.Offline.test_restore_duplicate_public_key_different_ip_rejected) ... ok
+test_restore_named_comments_before_and_inside_peer (__main__.Offline.test_restore_named_comments_before_and_inside_peer) ... ok
 test_restore_preserves_private_key_and_peers (__main__.Offline.test_restore_preserves_private_key_and_peers) ... ok
 test_restore_refuses_server_identity_replacement (__main__.Offline.test_restore_refuses_server_identity_replacement) ... ok
 test_restore_rejects_duplicate_addresses (__main__.Offline.test_restore_rejects_duplicate_addresses) ... ok
@@ -37,6 +51,6 @@ test_valid_inventory (__main__.Offline.test_valid_inventory) ... ok
 test_wan_injection_blocks (__main__.Offline.test_wan_injection_blocks) ... ok
 
 ----------------------------------------------------------------------
-Ran 37 tests in 0.985s
+Ran 51 tests in 1.141s
 
 OK

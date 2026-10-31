@@ -180,23 +180,46 @@ def profile(path):
         fail('Неверные H-параметры')
     return d
 
+class Section(dict):
+    """AWG fields + non-executable formatting metadata, вне пространства AWG keys."""
+    def __init__(self, *args, prefix=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.prefix = list(prefix or [])
+        self.before = {}
+        self.inline = {}
+        self.trailing = []
+
 def parse_awg(path):
     sections = []
-    for line in Path(path).read_text().splitlines():
-        line = line.split('#',1)[0].strip()
+    pending = []
+    for raw in Path(path).read_text().splitlines():
+        line, marker, comment = raw.partition('#')
+        line = line.strip()
         if not line:
+            pending.append(raw)
             continue
         if line in ('[Interface]','[Peer]'):
-            sections.append((line[1:-1],{}))
+            section = Section(prefix=pending)
+            # Header comments тоже сохраняются; ни одно имя не угадывается.
+            if marker:
+                section.before.setdefault('__header_comment__', []).append('#'+comment)
+            sections.append((line[1:-1],section))
+            pending = []
         elif '=' in line and sections:
             k,v = (x.strip() for x in line.split('=',1))
             if k in sections[-1][1]:
                 fail('Повторное поле в AWG-конфиге (значение скрыто)')
-            sections[-1][1][k] = v
+            section = sections[-1][1]
+            section[k] = v
+            section.before[k] = pending
+            if marker:
+                section.inline[k] = '#'+comment
+            pending = []
         else:
             fail('Неверный синтаксис AWG-конфига (строка скрыта)')
     if not sections or sections[0][0] != 'Interface' or sum(n=='Interface' for n,_ in sections) != 1:
         fail('Ожидается один [Interface]')
+    sections[-1][1].trailing = pending
     return sections
 
 def stripped(sections):
@@ -236,6 +259,8 @@ def render_transit(c, private, existing=None):
             fail('Неизвестные AWG1 параметры; нужна отдельная проверка совместимости')
         if any(oi.get(k)!=v for k,v in profile(c['TRANSIT_PROFILE_FILE']).items()):
             fail('Transit profile не совпал с действующим AWG1')
+        if set(old[1][1])-{'PublicKey','PresharedKey','AllowedIPs','Endpoint','PersistentKeepalive'}:
+            fail('Неизвестные peer-параметры AWG1: отдельный аудит, без молчаливого удаления')
         if old[1][1].get('PresharedKey') and 'PresharedKey' not in p:
             fail('Старый AWG1 использует PSK: нужен локальный TRANSIT_PSK_FILE, NONE запрещён')
         # PrivateKey берётся исключительно из действующего локального AWG1.
@@ -243,7 +268,27 @@ def render_transit(c, private, existing=None):
     return [('Interface',d),('Peer',p)]
 
 def render(sections):
-    return ''.join('['+n+']\n'+''.join(f'{k} = {v}\n' for k,v in d.items())+'\n' for n,d in sections)
+    lines = []
+    for i,(n,d) in enumerate(sections):
+        prefix = getattr(d,'prefix',[])
+        if i and not prefix:
+            lines.append('')
+        lines.extend(prefix)
+        lines.append('['+n+']')
+        before = getattr(d,'before',{})
+        lines.extend(before.get('__header_comment__',[]))
+        for k,v in d.items():
+            lines.extend(before.get(k,[]))
+            suffix = getattr(d,'inline',{}).get(k,'')
+            lines.append(f'{k} = {v}'+(' '+suffix if suffix else ''))
+        # При удалении quick-only поля (например SaveConfig) его заметки не теряются.
+        for k,comments in before.items():
+            if k!='__header_comment__' and k not in d:
+                lines.extend(comments)
+                inline=getattr(d,'inline',{}).get(k,'')
+                if inline:lines.append(inline)
+        lines.extend(getattr(d,'trailing',[]))
+    return '\n'.join(lines)+'\n'
 
 def restore_clients(c, source):
     s = parse_awg(source)
@@ -257,10 +302,14 @@ def restore_clients(c, source):
         fail('AWG0 адрес/порт backup не совпал с inventory')
     pubkey(d.get('PrivateKey',''))
     used = set()
+    keys = set()
     for n,p in s[1:]:
         if n != 'Peer' or set(p)-{'PublicKey','PresharedKey','AllowedIPs'}:
             fail('Импорт peer: разрешены только PublicKey/PresharedKey/AllowedIPs')
         pubkey(p.get('PublicKey',''))
+        if p['PublicKey'] in keys:
+            fail('Повторный PublicKey клиента: неоднозначное соответствие имени/IP')
+        keys.add(p['PublicKey'])
         if 'PresharedKey' in p:
             pubkey(p['PresharedKey'])
         a = ip.IPv4Interface(p.get('AllowedIPs',''))
@@ -326,7 +375,9 @@ def main():
                     if isinstance(target,ast.Name) and target.id in ('ENDPOINT','INTERFACE','NET'):
                         try: fields[target.id]=ast.literal_eval(node.value)
                         except (ValueError,TypeError): pass
-        report={'offline_only':True,'source_not_executed':True,'version_0_2_4_marker_present':bool(re.search(r'\b0\.2\.4\b',text)),
+        report={'offline_only':True,'source_not_executed':True,'activation_allowed':False,
+            'missing_required_literals':sorted({'ENDPOINT','INTERFACE','NET'}-fields.keys()),
+            'version_0_2_4_marker_present':bool(re.search(r'\b0\.2\.4\b',text)),
             'endpoint_matches_new_entry':fields.get('ENDPOINT')==c['CLIENT_ENDPOINT'],
             'interface_matches_awg0':fields.get('INTERFACE')=='awg0','net_matches':fields.get('NET')==c['CLIENT_CIDR'],
             'activation_status':'NO-GO: нужен локальный аудит кода и units; marker/AST не являются экспертизой'}
@@ -380,7 +431,10 @@ def main():
         serverpub=subprocess.check_output(['awg','pubkey'],input=sections[0][1]['PrivateKey']+'\n',text=True,stderr=subprocess.DEVNULL).strip()
         existing=[p for n,p in sections[1:] if p.get('PublicKey')==public]
         if existing and (len(existing)!=1 or existing[0].get('AllowedIPs')!=address): fail('Peer конфликтует с manifest клиента')
-        if not existing: sections.append(('Peer',{'PublicKey':public,'AllowedIPs':address}))
+        if not existing:
+            peer = Section({'PublicKey':public,'AllowedIPs':address})
+            peer.before['PublicKey'] = ['# '+name]
+            sections.append(('Peer',peer))
         cd={'PrivateKey':private,**CLIENT_PROFILE,'Address':address,'DNS':c['CLIENT_DNS'],'MTU':c['MTU']}
         cp={'PublicKey':serverpub,'AllowedIPs':'0.0.0.0/0, ::/0','Endpoint':c['CLIENT_ENDPOINT'],'PersistentKeepalive':'25'}
         atomic(conf,render([('Interface',cd),('Peer',cp)]))

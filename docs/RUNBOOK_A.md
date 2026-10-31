@@ -1,6 +1,6 @@
 # A — существующая ENTRY, новый EXIT
 
-Статус этого runbook: подготовлен и проверен локально, **не применён к VPS**. Сначала лаборатория, затем окно оператора. Старый EXIT остаётся рабочим до завершения всей приёмки. Нельзя считать его доступность доказанной историческим аудитом.
+Версия 2.0.0. Статус этого runbook: подготовлен и проверен локально, **не применён к VPS**. Сначала лаборатория, затем окно оператора. Старый EXIT остаётся рабочим до завершения всей приёмки. Нельзя считать его доступность доказанной историческим аудитом.
 
 ## 0. Сбор фактов без изменения сети
 
@@ -11,7 +11,7 @@
 Для ENTRY проверить локально, не публикуя конфиги/ключи:
 
 ```bash
-systemctl show awg-quick@awg1.service -p ExecStart --value
+systemctl show awg-quick@awg1.service -p ExecStart -p ExecStop
 systemctl cat paco-failclosed.service
 ip -4 rule show
 ip -4 route show table 100
@@ -19,7 +19,7 @@ iptables -C FORWARD -i awg0 -s 10.77.77.0/24 ! -o awg1 -j DROP
 awg show awg1 public-key
 ```
 
-Unit должен однозначно использовать `/etc/amnezia/awg1.conf`. Если используется bare `awg1`, другой путь или symlink — **STOP**, разобрать реальный unit и выбранную версию awg-quick, не создавать угаданный symlink. Нельзя автоматически мигрировать unit работающей системы ради прохождения проверки.
+ExecStart/ExecStop должны быть прямыми awg-quick up/down с точным аргументом `/etc/amnezia/awg1.conf`. Совпадение подстроки в .conf.bak, shell wrapper или цепочка нескольких команд не принимаются. Если используется bare `awg1`, другой путь или symlink — **STOP**, разобрать реальный unit и выбранную версию awg-quick, не создавать угаданный symlink. Нельзя автоматически мигрировать unit работающей системы ради прохождения проверки.
 
 Экспортирует **только числовые параметры протокола**, не private key:
 
@@ -55,6 +55,12 @@ bash scenario-A/01-prepare-new-exit.sh --config /root/paco/config.env --inventor
 Фиксируется backup, вооружается rollback timer, проверяется profile через временный `pacoprobe` без адресов/маршрутов и с ListenPort=0, создаются guard, AWG1, client-only NAT, reverse route. Убедиться в root-only файлах и enabled units, правильном UDP whitelist. До переключения ENTRY handshake может отсутствовать — это ожидаемо, не готовность полного каскада. Временный тестовый peer здесь не создаётся. Для его использования потребовался бы отдельный согласованный профиль/порт; основной комплект не вмешивается в активный peer на pre-stage.
 
 Сохранить ID EXIT и UTC deadline. Успеть до него либо выполнить rollback и повторно подготовить окно. Таймер не продлевается молча.
+
+## Проверка исправленного порядка v2
+
+На Москве guard следует за network-online.target и paco-failclosed, но не требует Before=network-pre. AWG0/1 через drop-ins требуют guard и следуют за ним. На новых EXIT используется отдельный ранний template без legacy dependency. В apply до probe/cutover создаются staged guard/drop-ins, затем standalone systemd-analyze verify читает реальные unit-файлы хоста через overlay. Меняется только executable path ещё не установленного helper на исходник KIT; ordering идентичен. Ошибка, timeout или cycle — NO-GO до любых изменений активных unit files/firewall. После установки повторяется verify с конечным путём.
+
+Preview остаётся без записи файлов и не удостоверяет будущий host graph. Для отдельной локальной проверки staged-файлов оператор может вызвать units.py stage-a и verify-live-a в защищённом временном каталоге, но это ещё не разрешение на cutover. Не заменять настоящий host graph fixture-моделью. В лаборатории обязательны reboot и startup AWG1 failure.
 
 ## 2. Переключить ENTRY
 

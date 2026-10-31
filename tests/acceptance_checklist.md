@@ -1,4 +1,4 @@
-# Приёмка: GO / NO-GO и отказы
+# PACO v2: приёмка GO / NO-GO и отказы
 
 Не выполнялась на VPS при подготовке ZIP. Начинать с лаборатории, отдельного согласия и console/двух SSH. Никакая отметка ниже не должна ставиться по одному открытому порту/PID/ненулевому счётчику.
 
@@ -19,6 +19,7 @@
 - [ ] Прочитан план, --apply и точный confirm даны для правильного узла; отдельно разрешён A cutover.
 - [ ] На опасном этапе появился timestamp backup, active transaction ID и **active** persistent timer с будущим deadline.
 - [ ] Kernel pacoprobe проверил round-trip J/S/H и удалён; AWG0/awg1 и чужие interfaces не удалялись.
+- [ ] Исправленные A templates не содержат Before=network-pre; staged verify проверил фактические host units перед cutover (не fixtures), а New-node guard не зависит от legacy failclosed.
 - [ ] Systemd units проверены на реальном VPS (статические fixtures недостаточны); guard без зависимости от интерфейсов и без ExecStop, AWG0 требует успешный guard.
 - [ ] `paco-deploy-guard.service`, нужные AWG units enabled/active, нет связанных failed units. A manager/statistics timer не затронуты.
 - [ ] ENTRY main default и eth1 неизменны; table100 рабочий default dev awg1 и unreachable default metric4278198272. Никакого ENTRY SNAT.
@@ -46,6 +47,7 @@ ip6tables -S FORWARD
 - [ ] DNS (`getent ahostsv4 example.org` на поддерживающем Linux клиенте либо штатная DNS-проверка устройства), обычный HTTPS, крупный transfer/MTU работают. DNS не уходит по native bypass согласно проверке платформы.
 - [ ] IPv6 request с клиента (например `curl -6 --fail --max-time 10 https://api64.ipify.org`) не имеет выхода. Ошибку одного сервиса нельзя считать доказательством: подтвердить capture ::/0/OS block, локальные маршруты и несколько доступных контрольных IPv6 destinations.
 - [ ] В A исходный AWG0 checksum/runtime peer set и manager source неизменны; действующие клиенты не требуют нового профиля. Не считать обязательным старое число 53, использовать сохранённый manifest текущего окна.
+- [ ] В B имена/комментарии peers из backup присутствуют в восстановленном AWG0 и соответствуют тому же PublicKey/IPv4; новый peer имеет своё # имя.
 - [ ] В B восстановлены нужные server/client identities либо выданы новые profiles. Новый Endpoint применён на устройствах. Потерянный private profile не «восстановлен» из публичного peer.
 
 ## Согласованные fault drill

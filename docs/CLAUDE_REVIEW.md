@@ -1,12 +1,12 @@
-# Итог ревью комплекта PACO
+# Итог ревью PACO v2
 
-Подготовлено по 01_CLAUDE_MASTER_TASK.md и всему консолидированному архиву от 31.10.2026. Исходные 13 файлов прошли проверку исходного SHA256SUMS. Рабочие серверы не опрашивались, изменения не выполнялись. Репозиторий `/workspace/paco` оставлен без исходников/коммитов; результат поставляется отдельным ZIP.
+Подготовлено по 01_CLAUDE_MASTER_TASK.md и всему консолидированному архиву от 31.10.2026. Исходные 13 файлов прошли проверку исходного SHA256SUMS. Рабочие серверы не опрашивались, изменения не выполнялись. v1 сохранён отдельно; v2 поставляется самостоятельным полным ZIP, а не патчем.
 
 ## Соответствие поставки
 
 Все запрошенные публичные Bash-файлы common/scenario-A/scenario-B присутствуют. Реальные алгоритмы находятся в `common/engine.sh`, общие функции — `lib.sh`, безопасная обработка конфигов/SQLite/undo — `data.py`, read-only preflight/verify — `checks.py`. Это обычные Bash scripts с Python stdlib helper, не pseudocode. В config только обязательные неизвестные inventory и пути локальных секретов; для основных операций TODO нет.
 
-Дополнительно: installer, key-generation wrapper, actual boot hooks/callback, fault drill, конкретные runbooks A/B/rollback, зависимости/official evidence, acceptance examples и локальные тесты. Systemd units/drop-ins/timer генерируются из проверенных heredocs; `templates/*.in` — их экспорт для ревью, не отдельная точка настройки. `tests/check_units.py` проверяет именно heredocs исполняемого генератора, а не только копии templates.
+Дополнительно: installer, key-generation wrapper, actual boot hooks/callback, fault drill, конкретные runbooks A/B/rollback, зависимости/official evidence, acceptance examples и локальные тесты. Guard/A drop-ins читаются из активных templates через units.py; timer/new AWG units по-прежнему используют heredocs. check_units.py проверяет именно рабочие templates/heredocs в модели сети, воспроизводит цикл v1 и отвергает другой legacy cycle. Устаревшие guard templates v1 удалены.
 
 ## Существенные решения
 
@@ -28,3 +28,5 @@
 | PRODUCTION-APPROVED | Нет: разрешение выдаёт оператор после лаборатории |
 
 В пакет не включены private keys, PSK, tokens, исходные client secrets/SQLite либо чужие бинарники. Не применять ZIP как слепой one-click installer к рабочей инфраструктуре.
+
+Оба P1 Киры приняты и исправлены. Полный ответ на все пункты — [KIRA_RESPONSE.md](KIRA_RESPONSE.md); подтверждённые ограничения не сняты необоснованно.

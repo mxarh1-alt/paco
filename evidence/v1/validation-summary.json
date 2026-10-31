@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-31",
+  "kind": "offline/static/userspace only",
+  "results": [
+    {
+      "check": "offline-tests.log",
+      "exit_code": 0
+    },
+    {
+      "check": "userspace-parser.log",
+      "exit_code": 0
+    },
+    {
+      "check": "systemd-verify.log",
+      "exit_code": 0
+    },
+    {
+      "check": "bash-n.log",
+      "exit_code": 0
+    },
+    {
+      "check": "shellcheck.log",
+      "exit_code": 0
+    },
+    {
+      "check": "source-checksums.log",
+      "exit_code": 0
+    },
+    {
+      "check": "all Python AST parse",
+      "exit_code": 0
+    }
+  ]
+}

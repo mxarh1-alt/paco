@@ -1,1 +1,6 @@
-PASS: systemd-analyze verify; rendered blocks: 8 ; base targets/legacy services are OFFLINE FIXTURES
+PASS: v1-negative-cycle ; cycle correctly REJECTED (negative control)
+PASS: v2-A-entry-legacy-after-online ; verify exit=0, no cycle
+PASS: v2-B-entry-early-guard ; verify exit=0, no cycle
+PASS: v2-A-new-exit-early-guard ; verify exit=0, no cycle
+PASS: v2-negative-legacy-after-awg1 ; cycle correctly REJECTED (negative control)
+5 ordering cases PASS (3 positive, 2 expected rejection); all are MODELS, no host graph/reboot was tested

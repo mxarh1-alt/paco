@@ -1,6 +1,17 @@
 {
+  "version": "2.0.0",
   "date": "2026-10-31",
-  "kind": "offline/static/userspace only",
+  "kind": "offline/static/userspace only; real VPS/host graph/reboot UNRUN",
+  "unit_tests": {
+    "run": 51,
+    "passed": 51,
+    "failed": 0,
+    "skipped": 0
+  },
+  "ordering_models": {
+    "positive_pass": 3,
+    "negative_correctly_rejected": 2
+  },
   "results": [
     {
       "check": "offline-tests.log",
@@ -28,6 +39,10 @@
     },
     {
       "check": "all Python AST parse",
+      "exit_code": 0
+    },
+    {
+      "check": "Kira audit source preserved",
       "exit_code": 0
     }
   ]

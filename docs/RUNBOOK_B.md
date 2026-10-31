@@ -1,4 +1,4 @@
-# B — два новых VPS
+# PACO v2: B — два новых VPS
 
 Новые public IP, hostname, WAN, точная Ubuntu 24.04 и ядра берутся **с новых узлов**. Публичные адреса старой Москвы/Алматы не копировать. `NODE_ROLE` и SSH whitelist задаются отдельно на каждом сервере. Комплект выбирает iptables-nft; UFW/nftables manager выключать вслепую нельзя — при активном manager STOP.
 
@@ -17,7 +17,7 @@ bash common/generate-transit-identity.sh --config /root/paco/config.env --invent
 
 `CLIENT_IDENTITY_STRATEGY`:
 
-- `RESTORE_FROM_OWNER_BACKUP`: root-only локальный AWG0 server config с исходным private key и всеми peers/PSK. Валидатор отбрасывает hooks, неверные сети/порты/профиль и широкие/дублирующиеся peer IP. Исходные клиентские private profiles остаются у владельца. Без server private key бесшовный перенос невозможен.
+- `RESTORE_FROM_OWNER_BACKUP`: root-only локальный AWG0 server config с исходным private key и всеми peers/PSK. Валидатор отбрасывает hooks, неверные сети/порты/профиль и широкие/дублирующиеся peer IP. Исходные клиентские private profiles остаются у владельца. v2 сохраняет `# имя` перед [Peer]/внутри секции, прочие standalone/inline комментарии и исходный порядок peers; имена не восстанавливаются догадкой по IP. После импорта локально сверить имя ↔ public key ↔ AllowedIPs с backup. Kernel stripped config не содержит комментарии. Без имени в исходнике новое имя не изобретается; дублирующий PublicKey блокирует restore. Без server private key бесшовный перенос невозможен.
 - `REISSUE_ALL`: новый серверный AWG0 key, новые клиентские private profiles локально на ENTRY. Раздача оператором по защищённому каналу. Старые профили не начнут работать автоматически.
 
 В обоих случаях новый ENTRY IP требует сменить Endpoint в клиентских профилях. Этот вариант кода использует явный IPv4:port. Вариант DNS/сохранения старого адреса требует отдельной проверки владения/TTL/соответствия; автоматически не реализован.

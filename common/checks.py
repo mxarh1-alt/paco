@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import subprocess
 import sys
 import time
@@ -34,6 +35,16 @@ def osrelease():
         if '=' in line:
             k,v=line.split('=',1);d[k]=v.strip('"')
     return d
+
+def explicit_awg1_command(property_value, verb):
+    """Не принимать подстроку awg1.conf.bak или shell wrapper за прямой путь."""
+    if verb not in ('up','down'):return False
+    commands=re.findall(r'argv\[\]=(.*?)\s*;',property_value)
+    if len(commands)!=1:return False
+    try:argv=shlex.split(commands[0])
+    except ValueError:return False
+    return (len(argv)==3 and argv[0].startswith('/') and Path(argv[0]).name=='awg-quick'
+            and argv[1:]==[verb,'/etc/amnezia/awg1.conf'])
 
 def host(c, action):
     role=c['NODE_ROLE'];prefix=role.upper();new=not(c['SCENARIO']=='A' and role=='entry')
@@ -148,10 +159,10 @@ def host(c, action):
             fail('Исходный paco-awg-traffic.timer не активен; отдельная диагностика')
         if 'ExecStop=' in run('systemctl','cat','paco-failclosed.service').stdout:
             fail('Legacy failclosed имеет ExecStop: проверить независимость правил')
-        unit=run('systemctl','show','awg-quick@awg1.service','-p','ExecStart','--value').stdout
-        # Bare awg1 читает не тот путь в свежем пакете: такие установки нельзя угадывать.
-        if '/etc/amnezia/awg1.conf' not in unit:
-            fail('Unit AWG1 не использует явный подтверждённый путь; нужен отдельный аудит unit, STOP')
+        for prop,verb in [('ExecStart','up'),('ExecStop','down')]:
+            unit=run('systemctl','show','awg-quick@awg1.service','-p',prop,'--value').stdout
+            if not explicit_awg1_command(unit,verb):
+                fail('AWG1 '+prop+' не является прямым awg-quick '+verb+' с подтверждённым путём; отдельный аудит, STOP')
         for name in ('awg0','awg1'):
             if run('systemctl','is-active','awg-quick@'+name+'.service',ok=False).returncode:
                 fail('Исходный AWG unit не активен')

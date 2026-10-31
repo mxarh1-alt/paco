@@ -1,19 +1,23 @@
-# PACO — комплект развёртывания
+# PACO-DEPLOY v2
 
-Bash-скрипты и документация для двух сценариев: **A — замена EXIT при сохранении ENTRY**, **B — два новых VPS**.
+Полный комплект для двух сценариев: **A — замена только EXIT**, **B — два новых VPS**. Версия 2.0.0 исправляет подтверждённые проблемы из независимого аудита Киры.
 
 ## Скачать
 
-- [Готовый ZIP PACO](https://github.com/mxarh1-alt/paco/raw/refs/heads/main/downloads/PACO-DEPLOY_20261031.zip)
-- [SHA256 ZIP](downloads/PACO-DEPLOY_20261031.zip.sha256)
-- Все файлы репозитория: **Code → Download ZIP** на странице GitHub.
+- **[Готовый ZIP PACO v2](https://github.com/mxarh1-alt/paco/raw/refs/heads/main/downloads/PACO-DEPLOY_v2_20261031.zip)**
+- [SHA256 v2](downloads/PACO-DEPLOY_v2_20261031.zip.sha256)
+- [Предыдущий ZIP v1](downloads/PACO-DEPLOY_20261031.zip), сохранён без изменений.
+- Весь репозиторий: **Code → Download ZIP**.
 
-Начните с [README_RU.md](README_RU.md). Аудит безопасности, runbooks и результаты проверок включены. Исходные документы находятся в `source-material/`.
+Начните с [README_RU.md](README_RU.md). [Краткий список исправлений](CHANGELOG_V2.md), [ответ на все пункты аудита Киры](docs/KIRA_RESPONSE.md), [результаты тестов](tests/test-results.md).
 
-## Статус проверки
+## Исправления v2
 
-**REVIEWED STATICALLY**: 37 локальных тестов, bash -n, ShellCheck и статическая проверка systemd units. На VPS испытания не выполнялись. Действующие серверы не изменялись.
+- Разделены A/new-node guard units: убран потенциальный цикл network-pre ↔ online/legacy для существующей ENTRY; защита до AWG0 сохранена.
+- Восстановление AWG0 сохраняет имена и комментарии peers.
+- Добавлена проверка будущего A графа на конкретном хосте до cutover; точные ExecStart/ExecStop пути AWG1, без shell wrappers/частичных совпадений.
+- Manager B остаётся в offline quarantine: его код не исполняется и collector не активируется.
 
-По умолчанию скрипты работают в dry-run. Неизвестные inventory/AWG/IPv6 условия блокируют применение через NO-GO. Применение требует отдельного согласия оператора и лабораторной проверки. Восстановление менеджера B — только offline до аудита его исходника.
+**Проверено локально:** 51 тест, 0 пропусков, bash -n, ShellCheck, 5 моделей systemd (3 положительных и 2 ожидаемых отказа). Статус REVIEWED STATICALLY. На реальных VPS граф/handshake/NAT/IPv6/SSH/rollback/reboot не проверялись; действующие серверы не изменялись.
 
-Рабочих private keys, PSK и клиентских секретных профилей в комплекте нет.
+По умолчанию скрипты работают в dry-run. Неизвестные inventory/AWG/IPv6 условия блокируются NO-GO. Нужны лаборатория, ревью и отдельное согласие оператора перед применением. Рабочих private keys/PSK в комплекте нет.

@@ -17,6 +17,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'common'))
 import data
 import checks
+import units
 
 def fixture():
     # Адреса — только входные данные offline-тестов; сеть к ним не используется.
@@ -99,6 +100,45 @@ class Offline(unittest.TestCase):
         result=data.restore_clients(self.c,p)
         self.assertEqual(result[0][1]['PrivateKey'],self.server()[0][1]['PrivateKey'])
         self.assertEqual(result[1:],self.server()[1:])
+    def named_backup(self):
+        interface=data.render(self.server()[:1])
+        return (interface+'\n# galt\n[Peer]\nPublicKey = '+dummy_key(2)+'\nAllowedIPs = 10.77.77.2/32\n'
+            '\n[Peer]\n# testpaco\nPublicKey = '+dummy_key(3)+'\nAllowedIPs = 10.77.77.54/32 # test address\n'
+            '# последняя заметка\n')
+    def test_restore_named_comments_before_and_inside_peer(self):
+        src=self.file('named.conf',self.named_backup())
+        output=data.render(data.restore_clients(self.c,src))
+        self.assertIn('# galt\n[Peer]\nPublicKey = '+dummy_key(2),output)
+        self.assertIn('[Peer]\n# testpaco\nPublicKey = '+dummy_key(3),output)
+        self.assertIn('10.77.77.54/32 # test address',output)
+        self.assertIn('# последняя заметка',output)
+        out=self.file('restored.conf',output)
+        self.assertEqual(data.peer_fingerprint(src),data.peer_fingerprint(out))
+        self.assertEqual(data.parse_awg(src)[0][1]['PrivateKey'],data.parse_awg(out)[0][1]['PrivateKey'])
+    def test_named_config_render_parse_repeat_is_stable(self):
+        p=self.file('named.conf',self.named_backup());a=data.render(data.parse_awg(p))
+        p.write_text(a);b=data.render(data.parse_awg(p))
+        self.assertEqual(a,b)
+    def test_removed_quick_field_keeps_its_notes(self):
+        text=data.render(self.server({'SaveConfig':'false'})).replace('SaveConfig = false','# заметка\nSaveConfig = false # ещё заметка')
+        output=data.render(data.restore_clients(self.c,self.file('saved.conf',text)))
+        self.assertNotIn('SaveConfig =',output)
+        self.assertIn('# заметка',output);self.assertIn('# ещё заметка',output)
+    def test_peer_comment_metadata_is_not_sent_to_awg(self):
+        s=data.parse_awg(self.file('named.conf',self.named_backup()))
+        stripped=data.stripped(s)
+        for label in ('galt','testpaco','test address','последняя'):self.assertNotIn(label,stripped)
+        self.assertNotIn('__header_comment__',stripped)
+        self.assertEqual(stripped.count('[Peer]'),2)
+    def test_header_and_unicode_comments_preserved(self):
+        text=data.render(self.server()).replace('[Peer]','[Peer] # имя клиента: тест')
+        output=data.render(data.parse_awg(self.file('header.conf',text)))
+        self.assertIn('# имя клиента: тест',output)
+        self.assertIn('[Peer]',output)
+    def test_restore_duplicate_public_key_different_ip_rejected(self):
+        s=self.server();s.append(('Peer',{'PublicKey':dummy_key(2),'AllowedIPs':'10.77.77.3/32'}))
+        with self.assertRaisesRegex(data.NoGo,'PublicKey'):
+            data.restore_clients(self.c,self.file('dup.conf',data.render(s)))
     def test_restore_rejects_hooks(self):
         p=self.file('awg0.conf',data.render(self.server({'PostUp':'echo forbidden'})))
         with self.assertRaises(data.NoGo):data.restore_clients(self.c,p)
@@ -128,6 +168,60 @@ class Offline(unittest.TestCase):
         self.c.update(TRANSIT_PROFILE_FILE=str(p),EXIT_TRANSIT_PUBLIC_KEY=dummy_key(4))
         s=self.server({'Address':self.c['ENTRY_AWG1_ADDR'],'ListenPort':'60334'});s[1][1]['PresharedKey']=dummy_key(5)
         with self.assertRaisesRegex(data.NoGo,'PSK'):data.render_transit(self.c,dummy_key(),self.file('awg1.conf',data.render(s)))
+    def test_a_unknown_transit_peer_parameter_rejected(self):
+        profile=self.file('profile',(ROOT/'config/transit-profile-B.conf.example').read_text())
+        self.c.update(TRANSIT_PROFILE_FILE=str(profile),EXIT_TRANSIT_PUBLIC_KEY=dummy_key(4))
+        s=self.server({'Address':self.c['ENTRY_AWG1_ADDR'],'ListenPort':'60334'});s[1][1]['UnknownFutureParam']='1'
+        with self.assertRaisesRegex(data.NoGo,'peer-параметры'):
+            data.render_transit(self.c,dummy_key(),self.file('awg1.conf',data.render(s)))
+    def test_existing_awg1_exact_start_stop_paths(self):
+        for verb in ('up','down'):
+            prop='{ path=/usr/bin/awg-quick ; argv[]=/usr/bin/awg-quick '+verb+' /etc/amnezia/awg1.conf ; ignore_errors=no ; }'
+            self.assertTrue(checks.explicit_awg1_command(prop,verb))
+    def test_existing_awg1_partial_paths_wrappers_and_extra_commands_blocked(self):
+        for args in ('/usr/bin/awg-quick up awg1','/usr/bin/awg-quick up /etc/amnezia/awg1.conf.bak',
+                     '/bin/sh -c "awg-quick up /etc/amnezia/awg1.conf"','/usr/bin/awg-quick down /etc/amnezia/awg1.conf'):
+            self.assertFalse(checks.explicit_awg1_command('{ argv[]='+args+' ; }','up'))
+        self.assertFalse(checks.explicit_awg1_command('{ argv[]=/usr/bin/awg-quick up /etc/amnezia/awg1.conf ; } { argv[]=/usr/bin/true ; }','up'))
+    def test_manager_report_never_executes_source_and_denies_activation(self):
+        config=self.file('cfg.env','\n'.join(k+'='+json.dumps(v) for k,v in self.c.items())+'\n');inv=self.file('inv.env','# empty\n')
+        sentinel=self.p/'SOURCE_EXECUTED'
+        src=self.file('manager.py',f"# 0.2.4\nENDPOINT='9.9.9.9:60333'\nINTERFACE='awg0'\nNET='10.77.77.0/24'\nopen({str(sentinel)!r},'w').write('forbidden')\n")
+        dst=self.p/'report.json'
+        p=subprocess.run([sys.executable,str(ROOT/'common/data.py'),'manager-report',str(config),str(inv),str(src),str(dst)],capture_output=True,text=True)
+        self.assertEqual(p.returncode,0,p.stderr);self.assertFalse(sentinel.exists())
+        report=json.loads(dst.read_text());self.assertFalse(report['activation_allowed']);self.assertFalse(report['endpoint_matches_new_entry'])
+        self.assertTrue(report['offline_only']);self.assertTrue(report['source_not_executed'])
+    def test_A_guard_is_after_legacy_and_before_awg_not_network_pre(self):
+        guard=units.guard('A','entry')
+        self.assertIn('After=local-fs.target network-online.target netfilter-persistent.service paco-failclosed.service',guard)
+        self.assertNotIn('Before=network-pre.target',guard)
+        self.assertIn('Before=awg-quick@awg0.service awg-quick@awg1.service',guard)
+        self.assertNotIn('ExecStop=',guard)
+    def test_new_nodes_use_early_guard_without_legacy_dependency(self):
+        for scenario,role in [('A','exit'),('B','entry'),('B','exit')]:
+            content=units.guard(scenario,role)
+            self.assertIn('Before=network-pre.target',content)
+            self.assertNotIn('paco-failclosed.service',content)
+    def test_live_graph_overlay_uses_real_search_paths_without_mutation(self):
+        stage=self.p/'stage';units.stage_a(stage)
+        original=(stage/'paco-deploy-guard.service').read_text()
+        def fake_run(argv,**kwargs):
+            self.assertNotIn('--root', ' '.join(argv))
+            self.assertIn('/etc/systemd/system',kwargs['env']['SYSTEMD_UNIT_PATH'].split(':'))
+            self.assertIn('awg-quick@awg0.service',argv);self.assertIn('paco-failclosed.service',argv)
+            candidate=Path(argv[4]).read_text()
+            self.assertEqual(candidate.split('[Service]')[0],original.split('[Service]')[0])
+            self.assertIn(str(ROOT)+'/common/runtime.sh',candidate)
+            return subprocess.CompletedProcess(argv,0,'','')
+        with patch.object(units.subprocess,'run',side_effect=fake_run):units.verify_live_a(stage)
+        self.assertEqual(original,(stage/'paco-deploy-guard.service').read_text())
+    def test_live_graph_cycle_or_error_blocks_even_if_exit_zero(self):
+        stage=self.p/'stage';units.stage_a(stage)
+        for code,stderr in [(0,'Found ordering cycle on model.service'),(1,'PRIVATE ERROR MUST NOT ESCAPE')]:
+            with patch.object(units.subprocess,'run',return_value=subprocess.CompletedProcess([],code,'',stderr)):
+                with self.assertRaises(data.NoGo) as error:units.verify_live_a(stage)
+                self.assertNotIn('PRIVATE ERROR',str(error.exception))
     def test_sqlite_online_copy_integrity_and_rows(self):
         import sqlite3
         a=self.p/'source.sqlite';b=self.p/'copy.sqlite'
@@ -215,5 +309,7 @@ class Offline(unittest.TestCase):
         profile=data.parse_awg(clients/'testpaco.conf')
         self.assertEqual(profile[1][1]['AllowedIPs'],'0.0.0.0/0, ::/0')
         self.assertEqual(profile[0][1]['S3'],'12');self.assertEqual(profile[0][1]['MTU'],'1380')
+        content=server.read_text()
+        self.assertEqual(content.count('# testpaco'),1);self.assertEqual(content.count('# another'),1)
 
 if __name__=='__main__':unittest.main(verbosity=2)

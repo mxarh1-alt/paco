@@ -104,38 +104,17 @@ install_runtime() {
         if [[ $SCENARIO == A && $ROLE == entry ]]; then printf 'NEW_NODE=NO\n'; else printf 'NEW_NODE=YES\n'; fi
     } > "$STATE/stage/runtime.env"
     put_file "$STATE/stage/runtime.env" /etc/paco-deploy/runtime.env
-    local legacy=''
-    [[ $SCENARIO != A || $ROLE != entry ]] || legacy='paco-failclosed.service'
-    write_file /etc/systemd/system/paco-deploy-guard.service <<EOF
-[Unit]
-Description=PACO independent fail-closed policy and firewall
-DefaultDependencies=no
-Wants=network-pre.target
-After=local-fs.target netfilter-persistent.service $legacy
-Before=network-pre.target paco-awg0.service paco-awg1.service awg-quick@awg0.service awg-quick@awg1.service
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-UMask=0077
-ExecStart=$RUNTIME/common/runtime.sh --apply guard
-# Нет ExecStop: guard не исчезает при остановке AWG1 или unit.
-[Install]
-WantedBy=multi-user.target
-EOF
     if [[ $ROLE == entry && $SCENARIO == A ]]; then
+        [[ -n ${A_UNITS_STAGE:-} ]] || die 'Нет предварительно проверенных A units'
+        put_file "$A_UNITS_STAGE/paco-deploy-guard.service" /etc/systemd/system/paco-deploy-guard.service
         local u
         for u in awg-quick@awg0 awg-quick@awg1; do
-            write_file "/etc/systemd/system/$u.service.d/90-paco-guard.conf" <<EOF
-[Unit]
-Requires=paco-deploy-guard.service
-After=paco-deploy-guard.service
-EOF
+            put_file "$A_UNITS_STAGE/$u.service.d/90-paco-guard.conf" "/etc/systemd/system/$u.service.d/90-paco-guard.conf"
         done
-        write_file /etc/systemd/system/awg-quick@awg1.service.d/91-paco-route.conf <<EOF
-[Service]
-ExecStartPost=$RUNTIME/common/runtime.sh --apply route-up
-ExecStopPost=$RUNTIME/common/runtime.sh --apply route-down
-EOF
+        put_file "$A_UNITS_STAGE/awg-quick@awg1.service.d/91-paco-route.conf" /etc/systemd/system/awg-quick@awg1.service.d/91-paco-route.conf
+    else
+        python3 "$KIT/common/units.py" guard "$SCENARIO" "$ROLE" > "$STATE/stage/guard.service"
+        put_file "$STATE/stage/guard.service" /etc/systemd/system/paco-deploy-guard.service
     fi
     write_file /etc/sysctl.d/90-paco-forward.conf <<EOF
 net.ipv4.ip_forward=1
@@ -216,6 +195,10 @@ from data import atomic,parse_awg
 atomic(sys.argv[2],parse_awg('/etc/amnezia/awg1.conf')[0][1]['PrivateKey']+'\n')
 PY
     python3 "$KIT/common/data.py" transit "$CONFIG" "$INVENTORY" "$STATE/stage/existing.key" "$STATE/stage/awg1.conf" /etc/amnezia/awg1.conf
+    # До правок активных files/firewall, а не после загрузки циклического unit.
+    A_UNITS_STAGE=$(mktemp -d "$STATE/stage/systemd-A.XXXXXXXX")
+    python3 "$KIT/common/units.py" stage-a "$A_UNITS_STAGE"
+    python3 "$KIT/common/units.py" verify-live-a "$A_UNITS_STAGE"
     probe_config "$STATE/stage/awg1.conf"
     begin_tx
     sha256sum /etc/amnezia/awg0.conf | cut -d ' ' -f1 > "$TX/awg0.sha256"
@@ -378,6 +361,9 @@ commit() {
 if ((!APPLY)); then
     note 'DRY-RUN: запись, генерация ключей, probe interface, firewall, systemd enable/reload, установка пакетов НЕ выполняются.'
     preflight
+    if [[ $ACTION == A-switch-entry ]]; then
+        note 'Граф будущих A units проверяется на файлах хоста перед cutover в --apply; dry-run не создаёт временных файлов и не подтверждает загрузку/reboot.'
+    fi
     case "$ACTION" in
         verify) python3 "$KIT/common/checks.py" verify "$CONFIG" "$INVENTORY";;
         B-connect) transit_test;;

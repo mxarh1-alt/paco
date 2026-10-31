@@ -27,14 +27,18 @@ EXIT: AWG1→WAN разрешён только для CLIENT_CIDR, обратн�
 
 ## Systemd
 
-`paco-deploy-guard.service` не зависит от существования AWG-интерфейсов. Он создаёт source rules/fallback/firewall и не имеет ExecStop. Для A `After=netfilter-persistent.service paco-failclosed.service`, для новых — после local-fs/netfilter-persistent, до AWG0/AWG1 и network-pre. В AWG units/drop-ins `Requires` и `After` guard. Ошибка guard блокирует запуск клиентского интерфейса.
+`paco-deploy-guard.service` не зависит от существования AWG-интерфейсов. Он создаёт source rules/fallback/firewall и не имеет ExecStop. В v2 для существующей ENTRY A `After=local-fs.target network-online.target netfilter-persistent.service paco-failclosed.service`, `Before=awg-quick@awg0.service awg-quick@awg1.service`, обычные default dependencies и ни одной связи Before=network-pre. Для новых узлов — после local-fs/netfilter-persistent, до network-pre и собственных paco-awg0/1, без legacy failclosed зависимости. В AWG units/drop-ins `Requires` и `After` guard. Ошибка guard блокирует запуск клиентского интерфейса.
 
 `paco-awg1.service` на новых VPS вызывает `/usr/bin/awg-quick up /etc/amnezia/awg1.conf` явно. `ExecStartPost` добавляет table100 default (ENTRY) или обратный маршрут (EXIT); `ExecStopPost` удаляет только рабочий маршрут и сохраняет unreachable/правила/guards. На ENTRY rp_filter AWG1 устанавливается в loose=2, иначе ответы Internet через AWG1 могут отбрасываться strict reverse-path validation.
 
 В A существующие units остаются; добавляются drop-ins на следующий boot, AWG0 не перезапускается. Новый AWG1 файл убирает старые quick hooks, вместо них persistent guard и route hooks. При нестандартной legacy функции — NO-GO до отдельного ревью. Нельзя разрешать dependency cycle удалением failclosed зависимостей.
 
-Таймер rollback независим от AWG и имеет постоянный deadline. Live процесс не считается сохраняемым состоянием. Порядок boot проверяется сначала статически на fixtures, затем **обязательно** на реальных units обоих тестовых VPS.
+Таймер rollback независим от AWG и имеет постоянный deadline. Live процесс не считается сохраняемым состоянием. Порядок boot проверяется сначала статически на расширенных сетевых fixtures (включая negative controls), затем **обязательно** на реальных units обоих тестовых VPS. Перед A cutover units.py проверяет prospective guard/drop-ins с настоящими unit-файлами хоста; для ещё не установленного helper меняется только executable path на тот же исходник KIT, [Unit] и весь граф сохраняются. После установки повторяется verify с конечным runtime path. Проверка файлов не заменяет reboot.
 
 ## IPv6
 
 IPv6 через EXIT в этом комплекте не маршрутизируется. Профили новых клиентов захватывают `::/0`, сервер блокирует захваченный IPv6. Криптографический peer AllowedIPs сервера остаётся IPv4-only. Native IPv6 клиента блокируется его VPN/OS политикой, что отдельно проверяется на каждой платформе. Даже идеальный серверный DROP не исправляет native IPv6 bypass вне туннеля. Если это нельзя обеспечить — --apply не разрешается.
+
+## Клиентские имена v2
+
+parse_awg хранит standalone/inline комментарии, включая `# имя` до [Peer] и внутри него, в отдельных атрибутах Section, не в AWG-параметрах. restore сохраняет их вместе с исходными ключами/AllowedIPs; render повторно стабилен. stripped исключает comments/metadata. Новая выдача B тоже записывает `# имя`. Имена не угадываются из public key или IP; неизвестные исходные имена не изобретаются. Повторный PublicKey с другим IP отвергается.

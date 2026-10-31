@@ -1,0 +1,15 @@
+[Unit]
+Description=PACO v2 independent guard for new node
+DefaultDependencies=no
+Wants=network-pre.target
+After=local-fs.target netfilter-persistent.service
+Before=network-pre.target paco-awg0.service paco-awg1.service
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+UMask=0077
+TimeoutStartSec=30s
+ExecStart=$RUNTIME/common/runtime.sh --apply guard
+# Нет ExecStop: остановка AWG1 не удаляет policy/fallback/firewall.
+[Install]
+WantedBy=multi-user.target

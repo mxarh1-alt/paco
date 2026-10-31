@@ -1,0 +1,1 @@
+PASS: actual userspace parser accepts J/S1-S4/H1-H4 and rejects unknown field; kernel/VPN NOT tested

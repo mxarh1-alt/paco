@@ -1,6 +1,6 @@
-# PACO DEPLOY — комплект A и B
+# PACO DEPLOY v2 — комплект A и B
 
-Подготовлен 31.10.2026. Статус: **REVIEWED STATICALLY**. Проверки на VPS, production-применение и публикация не выполнялись. Действующие серверы не опрашивались и не изменялись. Комплект предназначен для ревью Кирой, лаборатории, затем отдельного согласования оператором.
+Версия 2.0.0, подготовлена 31.10.2026. Исправления по аудиту Киры: [CHANGELOG_V2.md](CHANGELOG_V2.md), разбор всех замечаний: [docs/KIRA_RESPONSE.md](docs/KIRA_RESPONSE.md). Статус: **REVIEWED STATICALLY**. Проверки на VPS и применение к ним не выполнялись. Действующие серверы не опрашивались и не изменялись. Комплект предназначен для ревью Кирой, лаборатории, затем отдельного согласования оператором.
 
 ## Сначала — независимый аудит исходных данных
 
@@ -18,7 +18,7 @@
 
 ## Поддерживаемый вариант
 
-Новые VPS: **Ubuntu 24.04, amd64**, одинаковый точный `PRETTY_NAME` в B, ядро каждого узла указывается после аудита. Только kernel AmneziaWG, **iptables-nft с собственным `paco-deploy-guard.service`**. Это явный выбор для новых VPS; исторический EXIT с UFW не перенастраивается. На существующей ENTRY A продолжается работа netfilter-persistent; guard загружается после него и legacy failclosed, до AWG0/AWG1.
+Новые VPS: **Ubuntu 24.04, amd64**, одинаковый точный `PRETTY_NAME` в B, ядро каждого узла указывается после аудита. Только kernel AmneziaWG, **iptables-nft с собственным `paco-deploy-guard.service`**. Это явный выбор для новых VPS; исторический EXIT с UFW не перенастраивается. На существующей ENTRY A продолжается работа netfilter-persistent: guard следует за network-online и legacy failclosed, затем разрешает AWG0/AWG1. Для A нет Before=network-pre.target; ранний guard до network-pre применяется только на новых узлах.
 
 Активный UFW/firewalld/nftables manager, неизвестные native nft tables, legacy rules параллельно nft, Secure Boot без подтверждённой подписи модуля, provider NAT вместо адреса на WAN, конфликтующие сети/порты/правила — **NO-GO**. Автоматической смены backend нет. Для UFW-варианта требуется отдельный рассмотренный комплект; данный код не меняет `before.rules` и не вызывает `ufw reload`.
 
@@ -28,7 +28,7 @@
 
 - `scenario-A/`: новый EXIT → застрахованное переключение ENTRY → verify/commit → rollback.
 - `scenario-B/`: новый EXIT → ENTRY с guard → transit → restore/enroll → verify/commit.
-- `common/`: preflight, локальные ключи, установка AWG на новых узлах, backup, verify, rollback; общая Bash-реализация и Python 3 для безопасного разбора конфигов/SQLite.
+- `common/`: preflight, локальные ключи, установка AWG на новых узлах, backup, verify, rollback; общая Bash-реализация и Python 3 для безопасного разбора конфигов/SQLite. Имена/комментарии peers сохраняются; в stripped config метаданные не передаются.
 - `config/`: только несекретные примеры inventory, профиля и операторских свидетельств. Значения `TO_FILL`/`TO_CONFIRM` никогда не используются как работающая конфигурация.
 - `tests/`: offline-тесты, static units check, согласуемый fault drill и acceptance checklist.
 - `source-material/`: неизменённые исходные документы с исходным SHA256SUMS, для трассировки.
